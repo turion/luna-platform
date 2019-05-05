@@ -1,6 +1,7 @@
 { lib
 , haskellLib
 , nixpkgs
+, omitInterfacePragmas
 , haskellOverlays
 }:
 
@@ -56,7 +57,7 @@ rec {
   ##
 
   lunaPackages = import ./luna-packages {
-    inherit haskellLib lib nixpkgs;
+    inherit haskellLib lib nixpkgs omitInterfacePragmas;
   };
 
   any = _ : _ : {};

@@ -1,4 +1,9 @@
 { nixpkgsFunc ? import ./nixpkgs
+
+# build options
+, omitInterfacePragmas ? true # TODO: should be false by default
+
+# custom overlays to include
 , nixpkgsOverlays ? []
 , haskellOverlays ? []
 }:
@@ -10,7 +15,8 @@ let
         nixpkgs = self;
         inherit (self) lib;
         haskellLib = self.haskell.lib;
-        inherit haskellOverlays;
+        inherit omitInterfacePragmas
+                haskellOverlays;
       };
     };
   };

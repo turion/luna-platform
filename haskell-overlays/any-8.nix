@@ -7,7 +7,7 @@ self: super: {
   # https://github.com/NixOS/nixpkgs/issues/44565
   category = overrideCabal super.category (drv: {
     broken = false;
-    setupHaskellDepends = with pkgs.haskellPackages; [ alg base transformers ];
+    setupHaskellDepends = [ super.alg ];
   });
 
   constraint = overrideCabal super.constraint (drv: {

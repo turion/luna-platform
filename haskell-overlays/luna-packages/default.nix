@@ -1,6 +1,7 @@
 { haskellLib
 , lib
 , nixpkgs
+, omitInterfacePragmas
 }:
 
 with haskellLib;
@@ -10,13 +11,18 @@ self: super:
 let
   lunaSrc = nixpkgs.fetchFromGitHub (builtins.fromJSON (builtins.readFile ./luna.json));
 
+  addOmitInterfacePragmas = drv:
+    if omitInterfacePragmas
+    then appendConfigureFlag drv "-fomit-interface-pragmas"
+    else drv;
+
   # Luna has a central hpack-common.yaml in a top level config directory
   # so we need to make sure it's available during build.
   f = name: path: args:
-    dontHaddock (overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
+    dontHaddock (addOmitInterfacePragmas (overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
       src = "${lunaSrc}";
       postUnpack = "sourceRoot=$sourceRoot/${path}";
-    }));
+    })));
 in
 {
   # lib - local hackage overrides
