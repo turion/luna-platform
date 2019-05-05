@@ -11,17 +11,39 @@ self: super:
 let
   lunaSrc = nixpkgs.fetchFromGitHub (builtins.fromJSON (builtins.readFile ./luna.json));
 
-  addOmitInterfacePragmas = drv:
-    if omitInterfacePragmas
-    then appendConfigureFlag drv "-fomit-interface-pragmas"
-    else drv;
+  # Luna keeps common ghc-options in a central stack.yaml
+  # see https://github.com/luna/luna/blob/master/stack.yaml
+  ghcOptions =
+    [ "-O1"
+      "-Wall"
+      "-Wno-name-shadowing"
+      "-fexcess-precision"
+      "-fexpose-all-unfoldings"
+      "-flate-dmd-anal"
+      "-fmax-worker-args=1000"
+      "-fsimpl-tick-factor=400"
+      "-fspec-constr-keen"
+      "-fspecialise-aggressively"
+      "-fstatic-argument-transformation"
+      "-funbox-strict-fields"
+      "-threaded"
+      "-fconstraint-solver-iterations=100"
+    ] ++ (if omitInterfacePragmas then ["-fomit-interface-pragmas"] else []);
+
+  appendGhcOptions = xs: drv:
+    # TODO: why doesn't this work?
+    #let opts = lib.strings.concatStringsSep " " fs;
+    #in appendConfigureFlag drv ("--ghc-options='" + opts + "'");
+    lib.foldl' (res: x: appendConfigureFlag res ("--ghc-option=" + x)) drv xs;
 
   # Luna has a central hpack-common.yaml in a top level config directory
   # so we need to make sure it's available during build.
   f = name: path: args:
-    dontHaddock (addOmitInterfacePragmas (overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
-      src = "${lunaSrc}";
-      postUnpack = "sourceRoot=$sourceRoot/${path}";
+    dontHaddock (
+      appendGhcOptions ghcOptions (
+        overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
+          src = "${lunaSrc}";
+          postUnpack = "sourceRoot=$sourceRoot/${path}";
     })));
 in
 {
