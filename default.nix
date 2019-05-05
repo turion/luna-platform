@@ -43,9 +43,13 @@ let
   ghc8_4 = (makeRecursivelyOverridable nixpkgs.haskell.packages.ghc844).override {
     overrides = nixpkgs.haskell.overlays.combined;
   };
+  ghc8_6 = (makeRecursivelyOverridable nixpkgs.haskell.packages.ghc864).override {
+    overrides = nixpkgs.haskell.overlays.combined;
+  };
 in let this = rec {
   inherit nixpkgs
           ghc
           ghc8_4
+          ghc8_6
           ;
 }; in this
