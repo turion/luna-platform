@@ -9,7 +9,10 @@ with haskellLib;
 self: super:
 
 let
-  lunaSrc = nixpkgs.fetchFromGitHub (builtins.fromJSON (builtins.readFile ./luna.json));
+  # luna-shell needs .git for githash
+  lunaSrc = nixpkgs.fetchgit (
+    builtins.fromJSON (builtins.readFile ./luna.json) // { leaveDotGit = true; }
+  );
 
   # Luna keeps common ghc-options in a central stack.yaml
   # see https://github.com/luna/luna/blob/master/stack.yaml
@@ -30,11 +33,11 @@ let
       "-fconstraint-solver-iterations=100"
     ] ++ (if omitInterfacePragmas then ["-fomit-interface-pragmas"] else []);
 
-  appendGhcOptions = xs: drv:
+  appendGhcOptions = opts: drv:
     # TODO: why doesn't this work?
     #let opts = lib.strings.concatStringsSep " " fs;
     #in appendConfigureFlag drv ("--ghc-options='" + opts + "'");
-    lib.foldl' (res: x: appendConfigureFlag res ("--ghc-option=" + x)) drv xs;
+    lib.foldl' (res: x: appendConfigureFlag res ("--ghc-option=" + x)) drv opts;
 
   # Luna has a central hpack-common.yaml in a top level config directory
   # so we need to make sure it's available during build.
@@ -44,7 +47,7 @@ let
         overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
           src = "${lunaSrc}";
           postUnpack = "sourceRoot=$sourceRoot/${path}";
-    })));
+        })));
 in
 {
   # lib - local hackage overrides
@@ -97,11 +100,13 @@ in
   luna-package = dontCheck (f "luna-package" "package" {}); # tests fail
   luna-passes = f "luna-passes" "passes" {};
   luna-runtime = f "luna-runtime" "runtime" {};
-  luna-shell = f "luna-shell" "shell" {};
   luna-stdlib = f "luna-stdlib" "stdlib" {};
   luna-syntax-text-builder = f "luna-syntax-text-builder" "syntax/text/builder" {};
   luna-syntax-text-lexer = f "luna-syntax-text-lexer" "syntax/text/lexer" {};
   luna-syntax-text-model = f "luna-syntax-text-model" "syntax/text/model" {};
   luna-syntax-text-parser = f "luna-syntax-text-parser" "syntax/text/parser" {};
   luna-syntax-text-prettyprint = f "luna-syntax-text-prettyprint" "syntax/text/prettyprint" {};
+
+  # uses githash which needs git at compile time
+  luna-shell = addBuildTool (f "luna-shell" "shell" {}) nixpkgs.buildPackages.git;
 }
