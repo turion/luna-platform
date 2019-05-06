@@ -14,6 +14,13 @@ let
     builtins.fromJSON (builtins.readFile ./luna.json) // { leaveDotGit = true; }
   );
 
+  lunaStudioSrc = nixpkgs.fetchgit (
+    builtins.fromJSON (builtins.readFile ./luna-studio.json) // { leaveDotGit = true; }
+  );
+
+  addTestDepend = drv: x: addTestDepends drv [x];
+  addTestDepends = drv: xs: overrideCabal drv (drv: { testHaskellDepends = (drv.testHaskellDepends or []) ++ xs; });
+
   # Luna keeps common ghc-options in a central stack.yaml
   # see https://github.com/luna/luna/blob/master/stack.yaml
   ghcOptions =
@@ -41,15 +48,22 @@ let
 
   # Luna has a central hpack-common.yaml in a top level config directory
   # so we need to make sure it's available during build.
-  f = name: path: args:
+  callLunaPackage = src: name: path: args:
     dontHaddock (
       appendGhcOptions ghcOptions (
-        overrideCabal (self.callCabal2nix name "${lunaSrc}/${path}" args) (drv: {
-          src = "${lunaSrc}";
+        overrideCabal (self.callCabal2nix name "${src}/${path}" args) (drv: {
+          src = "${src}";
           postUnpack = "sourceRoot=$sourceRoot/${path}";
-        })));
+    })));
+
+  f = callLunaPackage lunaSrc;
+  g = callLunaPackage lunaStudioSrc;
 in
 {
+  ##
+  ## luna
+  ##
+
   # lib - local hackage overrides
   container = f "container" "lib/container" {};
   convert = f "convert" "lib/convert" {};
@@ -106,7 +120,35 @@ in
   luna-syntax-text-model = f "luna-syntax-text-model" "syntax/text/model" {};
   luna-syntax-text-parser = f "luna-syntax-text-parser" "syntax/text/parser" {};
   luna-syntax-text-prettyprint = f "luna-syntax-text-prettyprint" "syntax/text/prettyprint" {};
-
   # uses githash which needs git at compile time
   luna-shell = addBuildTool (f "luna-shell" "shell" {}) nixpkgs.buildPackages.git;
+
+  ##
+  ## luna-studio
+  ##
+
+  # config
+  luna-api-definition = g "luna-api-definition" "common/api-definition" {};
+
+  # backend libs
+  luna-empire = dontCheck (g "luna-empire" "backend/libs/luna-empire" {}); # tests fail
+  m-logger = g "m-logger" "backend/libs/m-logger" {};
+  zmq-bus = g "zmq-bus" "backend/libs/zmq-bus" {};
+  zmq-bus-config = g "zmq-bus-config" "backend/libs/zmq-bus-config" {};
+  zmq-rpc = g "zmq-rpc" "backend/libs/zmq-rpc" {};
+
+  # backend services
+  luna-broker = g "luna-broker" "backend/services/broker" {};
+  luna-bus-logger = g "luna-bus-logger" "backend/services/bus-logger" {};
+  # missing test dependency on prologue?
+  luna-double-representation = dontCheck (g "luna-double-representation" "backend/services/double-representation" {});
+  luna-undo-redo = dontCheck (g "luna-undo-redo" "backend/services/undo-redo" {});
+  luna-ws-connector = g "luna-ws-connector" "backend/services/ws-connector" {};
+
+  # frontend
+
+  #luna-studio-runner = g "luna-studio-runner" "runner" {};
+  #luna-studio-runner = overrideCabal (g "luna-studio-runner" "runner" {}) (drv: {
+  #  executableHaskellDepends = (drv.executableHaskellDepends or []) ++ [self.layered-state];
+  #});
 }

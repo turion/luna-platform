@@ -14,6 +14,10 @@ self: super: {
     broken = false;
   });
 
+  dependent-state = overrideCabal (doJailbreak super.dependent-state) (drv: {
+    broken = false;
+  });
+
   # broken tests
   Diff = dontCheck super.Diff;
 
@@ -27,6 +31,19 @@ self: super: {
   neat-interpolation = overrideCabal super.neat-interpolation (drv: {
     version = "0.3.2.2";
     sha256 = "0ffcr6q9bmvlmz5j8s0q08pbqzcfz9pkh8gz52arzscflpncbj5n";
+    editedCabalFile = null;
+  });
+
+  system-fileio = doJailbreak super.system-fileio;
+
+  zeromq4-haskell = dontCheck (overrideCabal super.zeromq4-haskell (drv: {
+    broken = false;
+  }));
+
+  # luna-empire wants == 0.6.1.2
+  zlib = overrideCabal super.zlib (drv: {
+    version = "0.6.1.2";
+    sha256 = "1fx2k2qmgm2dj3fkxx2ry945fpdn02d4dkihjxma21xgdiilxsz4";
     editedCabalFile = null;
   });
 }
