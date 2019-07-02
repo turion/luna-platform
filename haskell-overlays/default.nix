@@ -60,15 +60,16 @@ rec {
     inherit haskellLib lib nixpkgs omitInterfacePragmas;
   };
 
-  any = _ : _ : {};
+  any = _: _: {};
   any-8 = import ./any-8.nix { inherit lib haskellLib; inherit (nixpkgs) pkgs; };
-  any-8_4 = _ : _ : {};
-  any-8_6 = _ : _ : {};
-  any-head = _ : _ : {};
+  any-8_4 = _: _: {};
+  any-8_6 = _: _: {};
+  any-head = _: _: {};
 
   ghc-8_4 = _: _: {};
   ghc-8_6 = _: _: {};
   ghc-head = _: _: {};
 
   user-custom = foldExtensions haskellOverlays;
+
 }
