@@ -68,6 +68,9 @@ let
 
   f = callLunaPackage lunaSrc;
   g = callLunaPackage lunaStudioSrc;
+  prologue = f "prologue" "lib/prologue";
+  typelevel = f "typelevel" "lib/typelevel";
+  monad-branch = f "monad-branch" "lib/monad-branch";
 in
 {
   ##
@@ -84,12 +87,34 @@ in
   layered-state = f "layered-state" "lib/layered-state";
   layouting = f "layouting" "lib/layouting";
   lens-utils = f "lens-utils" "lib/lens-utils";
-  monad-branch = f "monad-branch" "lib/monad-branch";
+  monad-branch = monad-branch;
   monoid = f "monoid" "lib/monoid";
-  prologue = f "prologue" "lib/prologue";
+  prologue = prologue;
   terminal-text = dontHaddock (f "terminal-text" "lib/terminal-text"); # haddocks fail with parse error
-  typelevel = f "typelevel" "lib/typelevel";
+  typelevel = typelevel;
   vector-text = f "vector-text" "lib/vector-text";
+
+  # Use git version directly, hackage outdated?
+  dependent-state = dontHaddock (
+      appendGhcOptions ghcOptions (
+        overrideCabal (
+          self.callCabal2nix
+          "dependent-state"
+          (nixpkgs.fetchgit {
+            url = "https://github.com/luna/dependent-state/";
+            rev = "f1be47f0dbc6029d2ffcc6f0eb92fc9eb78bc3b6";
+            sha256 = "142nfldd1n4gyqac3cmgdnfa2pnylilrkg7rx8a4s6i5lacn1gpa";
+          }
+          )
+          {}
+          ) (drv: {
+            libraryHaskellDepends = [
+              prologue
+              typelevel
+              monad-branch
+              ];
+          })
+        ));
 
   # lib
   luna-autovector = f "luna-autovector" "lib/autovector";

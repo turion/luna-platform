@@ -14,9 +14,6 @@ self: super: {
     broken = false;
   });
 
-  dependent-state = overrideCabal (doJailbreak super.dependent-state) (drv: {
-    broken = false;
-  });
 
   # broken tests
   Diff = dontCheck super.Diff;
